@@ -5,7 +5,7 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
     DJANGO_SETTINGS_MODULE=shopping_list.settings \
-    PORT=8000
+    PORT=8000 \
     WEB_CONCURRENCY=2
 
 # Install system packages required by Django.
