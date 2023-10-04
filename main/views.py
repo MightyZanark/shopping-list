@@ -1,13 +1,14 @@
 import datetime
 
 from django.shortcuts import render, redirect
-from django.http import HttpResponseRedirect, HttpRequest, HttpResponse
+from django.http import HttpResponseRedirect, HttpRequest, HttpResponse, HttpResponseNotFound
 from django.urls import reverse
 from django.core import serializers
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 
 from main.forms import ProductForm
 from main.models import Product
@@ -31,7 +32,7 @@ def create_product(request: HttpRequest) -> HttpResponseRedirect | HttpResponse:
     form = ProductForm(request.POST or None)
 
     if form.is_valid() and request.method == "POST":
-        product = form.save(commit=False)
+        product: Product = form.save(commit=False)
         product.user = request.user
         product.save()
         return HttpResponseRedirect(reverse('main:show_main'))
@@ -56,6 +57,22 @@ def delete_product(request: HttpRequest, id: int) -> HttpResponseRedirect:
     product = Product.objects.get(pk=id)
     product.delete()
     return HttpResponseRedirect(reverse("main:show_main"))
+
+
+@csrf_exempt
+def add_product_ajax(request: HttpRequest) -> HttpResponse | HttpResponseNotFound:
+    if request.method == "POST":
+        name = request.POST.get("name")
+        price = request.POST.get("price")
+        description = request.POST.get("description")
+        user = request.user
+
+        new_product = Product(name=name, price=price, description=description, user=user)
+        new_product.save()
+
+        return HttpResponse(b"CREATED", status=201)
+    
+    return HttpResponseNotFound()
 
 
 def show_xml(request: HttpRequest) -> HttpResponse:
@@ -88,6 +105,11 @@ def show_json_by_id(request: HttpRequest, id: int) -> HttpResponse:
         serializers.serialize("json", data), 
         content_type="application/json"
     )
+
+
+def get_product_json(request: HttpRequest) -> HttpResponse:
+    products = Product.objects.filter(user=request.user)
+    return HttpResponse(serializers.serialize("json", products))
 
 
 def register(request: HttpRequest) -> HttpResponse:
