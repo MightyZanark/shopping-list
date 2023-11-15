@@ -1,7 +1,9 @@
+import json
 import datetime
 
 from django.shortcuts import render, redirect
-from django.http import HttpResponseRedirect, HttpRequest, HttpResponse, HttpResponseNotFound
+from django.http import HttpResponseRedirect, HttpRequest, \
+                        HttpResponse, HttpResponseNotFound, JsonResponse
 from django.urls import reverse
 from django.core import serializers
 from django.contrib import messages
@@ -73,6 +75,23 @@ def add_product_ajax(request: HttpRequest) -> HttpResponse | HttpResponseNotFoun
         return HttpResponse(b"CREATED", status=201)
     
     return HttpResponseNotFound()
+
+
+@csrf_exempt
+def add_product_flutter(request: HttpRequest) -> JsonResponse:
+    if request.method == "POST":
+        data = json.loads(request.body)
+        new_product = Product.objects.create(
+            user = request.user,
+            name = data["name"],
+            price = int(data["price"]),
+            description = data["description"]
+        )
+        new_product.save()
+        return JsonResponse({"status": "success"}, status=200)
+    
+    else:
+        return JsonResponse({"status": "error"}, status=401)
 
 
 def show_xml(request: HttpRequest) -> HttpResponse:
